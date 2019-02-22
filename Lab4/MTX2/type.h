@@ -8,6 +8,8 @@
 #define SLEEP    2
 #define ZOMBIE   3
 
+#define BLOCK 4 //set to 4 as 3 and below are taken
+
 typedef struct proc{
     struct proc *next;      // next proc pointer       
     int  *ksp;              // saved sp: at byte offset 4 
@@ -26,3 +28,8 @@ typedef struct proc{
 
     int   kstack[1024];     // process stack                 
 }PROC;
+
+typedef struct semaphore{
+  int value;
+  PROC *queue;
+}SEMAPHORE;

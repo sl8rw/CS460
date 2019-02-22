@@ -48,10 +48,29 @@ int init()
   printf("init complete: P0 running\n"); 
 }
 
+int INIT() //uppercase INIT -->
+{
+  int pid, status;
+  PIPE *p = &pipe;
+  printf("P1 running: create pipe and writer reader processes\n");
+  kpipe();
+  kfork(pipe_writer);
+  kfork(pipe_reader);
+  printf("P1 waits for ZOMBIE child\n");
+  while(1){
+    pid = kwait(&status);
+    if (pid < 0){
+      printf("no more child, P1 loops\n");
+      while(1);
+    }
+    printf("P1 buried a ZOMBIE child %d\n", pid);
+  }
+}
+
 int menu()
 {
   printf("****************************************\n");
-  printf(" ps fork switch exit jesus sleep wakeup \n");
+  printf(" ps fork switch exit jesus wait sleep wakeup \n");
   printf("****************************************\n");
 }
 
@@ -119,6 +138,8 @@ int body()   // process body function
       do_sleep();
    if (strcmp(cmd, "wakeup")==0)
       do_wakeup();
+    if (strcmp(cmd, "wait")==0)
+      do_wait();
   }
 }
 
@@ -134,6 +155,86 @@ int kfork()
   p->status = READY;
   p->priority = 1;       // ALL PROCs priority=1, except P0
   p->ppid = running->pid;
+  p->parent = running;
+
+  //Process Tree
+  if(p->parent->child==NULL) //if theres no children
+  {
+    p->parent->child=p;
+  }
+  else
+  {
+    PROC *pTemp=p->parent->child; //there is a child
+    while(pTemp)
+    {
+    pTemp=pTemp->sibling; //going to keep progressing through the list
+    }
+    pTemp->sibling=pTemp;
+  }
+}
+  
+
+  //implement kwait and kexit ---- PAGE 121 MTX for kwait, 
+  int kwait(int *status)
+  {
+      PROC *p, int i, hasChild=0;
+      while(1) //whole PROCs for a child
+      {
+        for (int i=1;i<NPROC;i++) //skip P0
+        {
+          p=&proc[i];
+          if(p->status!=FREE && p->ppid==running->pid)
+          {
+            hasChild=1;
+            if(p->status==ZOMBIE)
+            {
+              *status=p->exitCode;
+              p->status=FREE;
+              put_proc(&freeList,p);
+              nproc--;
+              return(p->pid);
+            }
+          }
+        }
+        if(!hasChild) return -1; //if there is no child, we ERROR
+        ksleep(running); //still has children
+      }
+  }
+
+
+  int kexit(int exitValue) //page 452 in embedded systems
+  {
+    int i;
+    PROC *p;
+    if(running->pid==1)
+    {
+      return -1;
+    }
+    slock(&proclock);
+    for (i=2;i<NPROC;i++)
+    {
+      p=&proc[i];
+      if((p->status!=FREE) && (p->ppid==running->pid))
+      {
+        if(p->status==ZOMBIE)
+        {
+          p->status=FREE;
+          putproc(&freeList,p); //releases zombie children
+        }
+        else
+        {
+          printf("send child %d to P1\n",p->pid);
+          p->ppid=1;
+          p->parent=&proc[1];
+        }
+      }
+      sunlock(&proclock);
+      running->exitCode=value;
+      running->status=ZOMBIE;
+      V(&running->parent->wchild); //senaphore thingy
+      ttswitch();
+    }
+  }
   
   /************ new task initial stack contents ************
    kstack contains: |retPC|eax|ebx|ecx|edx|ebp|esi|edi|eflag|
@@ -167,6 +268,11 @@ int do_switch()
 int do_exit()
 {
   kexit(running->pid);  // exit with own PID value 
+}
+
+int do_wait()
+{
+  kwait(0);
 }
 
 int do_sleep()
@@ -208,4 +314,103 @@ int scheduler()
   printList("readyQueue", readyQueue);
   running = dequeue(&readyQueue);
   printf("next running = %d\n", running->pid);  
+}
+ //prework 2 P and V
+
+ int P(struct semaphore *s)
+{
+  s->value--;
+  if (s->value < 0){
+    printf("proc %d BLOCK\n", running->pid);
+    show_buffer();
+    running->status = BLOCK;
+    enqueue(&s->queue, running);
+    tswitch();
+  }
+}
+
+int V(struct semaphore *s)
+{
+  PROC *p;
+  s->value++;
+  if (s->value <= 0){
+    p = dequeue(&s->queue);
+    p->status = READY;
+    enqueue(&readyQueue, p);
+    printf("V-up %d\n", p->pid);
+    show_buffer();
+  }
+}
+
+
+//producer and consumer for prework2
+int produce(char c)
+{
+  BUFFER *p = &buffer;
+  P(&p->room);
+  P(&p->mutex);
+  p->buf[p->head++] = c;
+  p->head %= BSIZE;
+  V(&p->mutex);
+  V(&p->data);
+}
+
+int consume()
+{
+  int c;
+  BUFFER *p = &buffer;
+  P(&p->data);
+  P(&p->mutex);
+  c = p->buf[p->tail++];
+  p->tail %= BSIZE;
+  V(&p->mutex);
+  V(&p->room);
+  return c;
+}
+ 
+int consumer()
+{
+  char line[128];
+  int nbytes, n, i;
+
+  printf("proc %d as consumer\n", running->pid);
+ 
+  while(1){
+    printf("input nbytes to read : " );
+    fgets(line, 128, stdin);
+    line[strlen(line)-1] = 0;
+    sscanf(line, "%d", &nbytes);
+    show_buffer();
+    for (i=0; i<nbytes; i++){
+       line[i] = consume();
+       printf("%c", line[i]);
+    }
+    printf("\n");
+    show_buffer();
+    printf("consumer %d got n=%d bytes : line=%s\n", running->pid, n, line);
+  }
+}
+
+int producer()
+{
+  char line[128];
+  int nbytes, n, i;
+
+  printf("proc %d as producer\n", running->pid);
+
+  while(1){
+    printf("input a string to produce : " );
+    
+    fgets(line, 128, stdin);
+    line[strlen(line)-1] = 0;
+
+    nbytes = strlen(line);
+    printf("nbytes=%d line=%s\n", nbytes, line);
+    show_buffer();
+    for (i=0; i<nbytes; i++){
+      produce(line[i]);
+    }
+    show_buffer();
+    printf("producer %d put n=%d bytes\n", running->pid, nbytes);
+  }
 }
