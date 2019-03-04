@@ -48,6 +48,19 @@ typedef volatile struct timer{
   int tick, hh, mm, ss; // per timer data area
   char clock[16]; 
 }TIMER;
+
+
+typedef struct tq{
+  struct tq *next; //next ptr to element
+  int time;
+  struct PROC *prov;
+  int (*action)(); //handle function pointer
+}TQE;
+
+//important to note the timer queue action field is a function pointer
+//0 means wakeup, 1 means notify, other value is the entry address of a handler function
+
+TQE *tq, tqe[9]; //NPROC is 9
 volatile TIMER timer;  // 4 timers; 2 timers per unit; at 0x00 and 0x20
 
 int kprintf(char *fmt, ...);
@@ -133,3 +146,6 @@ void timer_stop() // timer_start(0), 1, etc.
   TIMER *tp = &timer;
   *(tp->base+TCNTL) &= 0x7F;  // clear enable bit 7
 }
+
+//refer to page 158 in embedded systems (chapter 5 process management)
+//correction page 292 in embedded systems

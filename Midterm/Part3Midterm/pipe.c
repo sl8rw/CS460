@@ -134,7 +134,9 @@ int pipe_reader()
     if(nbytes==0)
     {
       printf("Trying to read 0 bytes\n");
+      printf("Broken Pipe\n");
       kexit(0);
+      
       p->writerStatus=0;
     }
     n = read_pipe(p, line, nbytes);
