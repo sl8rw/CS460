@@ -79,10 +79,8 @@ typedef struct proc{
   int    *usp;     // at 8 : Umode sp at time of syscall
   int    *upc;     // at 12: linkR at time of syscall
   int    *cpsr;    // at 16: Umode cpsr
-
   u32    *pgdir;   // level-1 page table pointer
   int     inkmode; 
-
   int    status;
   int    priority;
   int    pid;
@@ -90,7 +88,6 @@ typedef struct proc{
   struct proc *parent;
   int    event;
   int    exitCode;
-
   char   name[64];
   int    kstack[SSIZE];
 }PROC;

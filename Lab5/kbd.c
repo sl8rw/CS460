@@ -82,23 +82,26 @@ int kbd_init()
 // kbd_handler1() for scan code set 1
 void kbd_handler1()
 {
-  u8 scode, c;
+    u8 scode, c;
   KBD *kp = &kbd;
-  color = YELLOW;
+
   scode = *(kp->base + KDATA);
+
+  //printf("scan code = %x ", scode);
   
   if (scode & 0x80)
     return;
   c = unsh[scode];
 
-  printf("%c", c);
-  
+  if (c == '\r')
+     kputc('\n');
+  kputc(c);
+
   kp->buf[kp->head++] = c;
   kp->head %= 128;
-  kp->data++; kp->room--;
 
-  if (c=='\r')
-    kline++;
+  kp->data++;
+  kp->room--;
 }
 
 // kbd_handelr2() for scan code set 2
@@ -109,11 +112,78 @@ void kbd_handler2()
 
 void kbd_handler()
 {
-  if (keyset == 1)
-    kbd_handler1();
-  else
-    kbd_handler2();
+   u8 scode, c;
+
+  KBD *kp = &kbd;
+  color = YELLOW;
+  scode = *(kp->base + KDATA);  // get scan code from KDATA reg => clear IRQ
+
+  // printf("scanCode = %x\n", scode);
+  if (scode == 0xF0){       // key release 
+     release = 1;           // set flag
+     return;
+  }
+
+  if(scode==0x12) //left shift
+  {
+    shifted=!shifted; //bit inversion ->makes simple to go back and forth between shift and not shift
+    if(!shifted)
+    {
+      release = 0;
+    }
+    return;
+  }
+
+  if(scode==0x14)
+  {
+    control=!control;
+      if(!control)
+      {
+        release=0;
+      }
+    return;
+  }
+
+
+  if(control && (scode==0x21) && release)
+  {
+    printf("Control-c pressed\n");
+    release=0;
+    return;
+  }
+  
+
+  if (release && scode){    // next scan code following key release
+     release = 0;           // clear flag 
+     return;
+  }
+
+
+  if(control && scode==0x23 && release)
+  {
+    c=0x04; //end of file call
+    release=0;
+    return;
+  }
+  
+  if (!shifted)            
+     c = ltab[scode];
+  else               // ONLY IF YOU can catch LEFT or RIGHT shift key
+     c = utab[scode];
+  
+
+
+  printf("%c", c);
+  
+  
+  if(!control) //-->if control==0
+  {
+  kp->buf[kp->head++] = c;
+  kp->head %= 128;
+  kp->data++; kp->room--;
+  }
 }
+
 
 
 int kgetc()
