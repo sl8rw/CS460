@@ -1,4 +1,4 @@
-#include "type.h"
+// #include "type.h"
 
 int bsector;
 int bmap, imap, iblk, blk, offset;

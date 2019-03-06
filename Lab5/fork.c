@@ -36,10 +36,11 @@ PROC *kfork(char *filename)
   }
   p->ppid = running->pid;
   p->parent = running;
-  p->parent = running;
   p->status = READY;
   p->priority = 1;
   p->cpsr = (int *)0x10;
+
+  // finish initializing proc struct
   
  // build p's pgtable 
   p->pgdir = (int *)(0x600000 + (p->pid - 1)*0x4000);
@@ -104,6 +105,24 @@ PROC *kfork(char *filename)
 
   //  p->kstack[SSIZE-1] = (int)0x80000000;
   p->kstack[SSIZE-1] = VA(0);
+
+
+  // process family tree goes here
+if(p->parent->child==0) //if theres no children
+  {
+    p->parent->child=p;
+    printf("%d\n",p);
+  }
+  else
+  {
+    PROC *pTemp=p->parent->child; //there is a child
+    while(pTemp)
+    {
+    pTemp=pTemp->sibling; //going to keep progressing through the list
+    }
+    pTemp->sibling=pTemp;
+  }
+
   // -|-----goUmode-------------------------------------------------
   //  r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 ufp uip upc|string       |
   //----------------------------------------------------------------

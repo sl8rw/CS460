@@ -32,6 +32,8 @@ int color;
 #include "fork.c"
 #include "svc.c"
 
+#include "yourload.c"
+
 #include "sdc.c"
 #include "wait.c"
 
@@ -134,9 +136,9 @@ int main()
    kernel_init();
   
    kfork("u1");
-   kfork("u2");
-   kfork("u3");
-   kfork("u4");
+  //  kfork("u2");
+  //  kfork("u3");
+  //  kfork("u4");
    
    unlock();
    color = WHITE;

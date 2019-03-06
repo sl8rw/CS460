@@ -32,17 +32,27 @@ int ubody(char *name)
        ups();
     if (strcmp(line, "chname")==0)
        uchname();
-
     if (strcmp(line, "switch")==0)
        uswitch();
+    if (strcmp(line, "wait")==0)
+      uwait();
+    if (strcmp(line,"wakeup")==0)
+      uwakeup();
+    if (strcmp(line, "sleep")==0)
+      usleep();
+    if (strcmp(line, "fork")==0)
+       ufork();
+    if (strcmp(line, "exit")==0)
+       uexit();
+
   }
 }
 
 int umenu()
 {
-  uprintf("-------------------------------\n");
-  uprintf("getpid getppid ps chname switch\n");
-  uprintf("-------------------------------\n");
+  uprintf("-------------------------------------------------\n");
+  uprintf("getpid getppid ps chname switch wait wakeup sleep exit\n");
+  uprintf("-------------------------------------------------\n");
 }
 
 int getpid()
@@ -88,6 +98,31 @@ int uswitch()
   return syscall(4,0,0,0);
 }
 
+int uwait()
+{
+  return syscall(5,0,0,0);
+
+}
+
+int uwakeup()
+{
+  return syscall(6,0,0,0);
+}
+
+int usleep()
+{
+  return syscall(7,0,0,0);
+}
+
+int uexit()
+{
+  return syscall(8,0,0,0);
+}
+
+int ufork()
+{
+  return syscall(9,0,0,0); //binding, parameters.......
+}
 
 int ugetc()
 {

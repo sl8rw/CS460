@@ -56,6 +56,34 @@ int kgetPA()
   return running->pgdir[2048] & 0xFFFF0000;
 }
 
+
+int do_wait()
+{
+    kwait(running->pid);
+}
+
+int do_wakeup()
+{
+  int k_int=geti();
+  kwakeup(k_int);
+}
+
+int do_sleep()
+{
+  ksleep(running->pid);
+}
+
+
+int do_exit()
+{
+  kexit(running->pid);
+}
+
+int do_fork()
+{
+  kfork("u1");
+}
+
 // called from svc_entry in ts.s
 int svc_handler(int a, int b, int c, int d)
 {
@@ -67,7 +95,12 @@ int svc_handler(int a, int b, int c, int d)
      case 2: r = kps();              break;
      case 3: r = kchname((char *)b); break;
      case 4: r = ktswitch();         break;
-
+     //bind kernel function to a case, then break;
+     case 5: r = do_wait(); break;
+     case 6: r=do_wakeup();break;
+     case 7: r=do_sleep(); break;
+     case 8: r=do_exit();break;
+     case 9: r=do_fork(); break;
      case 90: r = kgetc() & 0x7F;    break;
      case 91: r = kputc(b);          break;
      case 92: r = kgetPA();          break;
