@@ -64,13 +64,14 @@ int do_wait()
 
 int do_wakeup()
 {
+  // int k_int;
   int k_int=geti();
-  kwakeup(k_int);
+  return kwakeup(k_int);
 }
 
 int do_sleep()
 {
-  ksleep(running->pid);
+  ksleep(0);
 }
 
 
@@ -82,6 +83,11 @@ int do_exit()
 int do_fork()
 {
   kfork("u1");
+}
+
+int do_exec(int selection)
+{
+  exec(selection);
 }
 
 // called from svc_entry in ts.s
@@ -104,6 +110,7 @@ int svc_handler(int a, int b, int c, int d)
      case 90: r = kgetc() & 0x7F;    break;
      case 91: r = kputc(b);          break;
      case 92: r = kgetPA();          break;
+     case 93: r=do_exec(b); break;
      default: printf("invalid syscall %d\n", a);
   }
   

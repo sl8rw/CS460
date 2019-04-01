@@ -20,6 +20,7 @@ int ubody(char *name)
   while(1){
     printf("This is process #%d in Umode at %x parent=%d\n", pid, getPA(),ppid);
     umenu();
+    printf("\nthis is from %s body\n", name);
     printf("input a command : ");
     ugetline(line); 
     uprintf("\n"); 
@@ -42,6 +43,8 @@ int ubody(char *name)
       usleep();
     if (strcmp(line, "fork")==0)
        ufork();
+    if (strcmp(line, "exec")==0)
+       uexec();
     if (strcmp(line, "exit")==0)
        uexit();
 
@@ -51,7 +54,7 @@ int ubody(char *name)
 int umenu()
 {
   uprintf("-------------------------------------------------\n");
-  uprintf("getpid getppid ps chname switch wait wakeup sleep exit\n");
+  uprintf("getpid getppid ps chname switch wait wakeup sleep exec exit\n");
   uprintf("-------------------------------------------------\n");
 }
 
@@ -114,6 +117,13 @@ int usleep()
   return syscall(7,0,0,0);
 }
 
+int uexec()
+{
+  char *cmd;
+  printf("What command?\n");
+  ugetline(cmd);
+  return syscall(93,cmd,0,0);
+}
 int uexit()
 {
   return syscall(8,0,0,0);
