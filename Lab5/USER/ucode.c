@@ -19,9 +19,12 @@ int ubody(char *name)
 
   while(1){
     printf("This is process #%d in Umode at %x parent=%d\n", pid, getPA(),ppid);
+    
     umenu();
     printf("\nthis is from %s body\n", name);
-    printf("input a command : ");
+    printf("Process parent: %d\n", ppid);
+    printf("Process id: %d\n", pid);
+    printf("input a command: ");
     ugetline(line); 
     uprintf("\n"); 
  
@@ -42,7 +45,7 @@ int ubody(char *name)
     if (strcmp(line, "sleep")==0)
       usleep();
     if (strcmp(line, "fork")==0)
-       ufork();
+       ufork(name);
     if (strcmp(line, "exec")==0)
        uexec();
     if (strcmp(line, "exit")==0)
@@ -129,9 +132,9 @@ int uexit()
   return syscall(8,0,0,0);
 }
 
-int ufork()
+int ufork(char *name)
 {
-  return syscall(9,0,0,0); //binding, parameters.......
+  return syscall(9,name,0,0); //binding, parameters.......
 }
 
 int ugetc()

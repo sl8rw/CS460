@@ -80,9 +80,9 @@ int do_exit()
   kexit(running->pid);
 }
 
-int do_fork()
+int do_fork(char *name)
 {
-  kfork("u1");
+  kfork(name);
 }
 
 int do_exec(int selection)
@@ -106,7 +106,7 @@ int svc_handler(int a, int b, int c, int d)
      case 6: r=do_wakeup();break;
      case 7: r=do_sleep(); break;
      case 8: r=do_exit();break;
-     case 9: r=do_fork(); break;
+     case 9: r=do_fork(b); break;
      case 90: r = kgetc() & 0x7F;    break;
      case 91: r = kputc(b);          break;
      case 92: r = kgetPA();          break;
