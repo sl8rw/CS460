@@ -178,12 +178,12 @@ PROC *kfork(char *filename)
   // user mode's cspr was set to IF=00, mode=10000  
   ***********************/
   // must load filename to Umode image area at 7MB+(pid-1)*1MB
-  addr = (char *)(0x700000 + (p->pid) * 0x100000);
+  addr = (char *)(0x700000 + (p->pid) * 0x200000);
   file[0] = 0;
-  if (filename[0] != '/')
-  { // relative to /bin
-    kstrcpy(file, "/bin/");
-  }
+  // if (filename[0] != '/')
+  // { // relative to /bin
+  //   kstrcpy(file, "/bin/");
+  // }
   kstrcat(file, filename);
   load(file, p);
 
