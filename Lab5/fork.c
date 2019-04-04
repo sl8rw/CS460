@@ -58,20 +58,12 @@ int exec(char *cmdline) // cmdline=VA in Uspace
   return (int)p->usp; // will replace saved r0 in kstack
 }
 
-
-PROC *kfork(char *filename)
+PROC *fork()
 {
   int i;
   int *ptable, pentry;
-  char *addr;
-  /*
-  char *cp, *cq;
+  char *PA, *CA;
 
-  char line[8];
-  int usize1, usize;
-  int *ustacktop, *usp;
-  u32 BA, Btop, Busp;
-  */
   PROC *p = dequeue(&freeList);
   if (p == 0)
   {
@@ -80,12 +72,66 @@ PROC *kfork(char *filename)
   }
   p->ppid = running->pid;
   p->parent = running;
+  p->parent = running;
+  p->status = READY;
+  p->priority = 1;
 
+  p->pgdir = (int *)(0x600000 + (p->pid - 1) * 0x4000);
+  ptable = p->pgdir;
+  // initialize pgtable
+  for (i = 0; i < 4096; i++)
+    ptable[i] = 0;
+  pentry = 0x412;
+
+  for (i = 0; i < 258; i++)
+  {
+    ptable[i] = pentry;
+    pentry += 0x100000;
+  }
+
+  ptable[2048] = 0x800000 + (p->pid - 1) * 0x100000 | 0xC32;
+
+  PA = running->pgdir[2048] & 0xFFFF0000;
+  CA = p->pgdir[2048] & 0xFFFF0000;
+
+  memcpy((char *)CA, (char *)PA, 0x100000);
+
+  for (i = 1; i <= 14; i++)
+  {
+    p->kstack[SSIZE - i] = running->kstack[SSIZE - i];
+  }
+
+  for (i = 15; i <= 28; i++)
+    p->kstack[SSIZE - i] = 0;
+
+  p->kstack[SSIZE - 14] = 0;
+  p->kstack[SSIZE - 15] = (int)goUmode;
+  p->ksp = &(p->kstack[SSIZE - 28]);
+  p->usp = running->usp; 
+  p->cpsr = running->cpsr;
+  enqueue(&readyQueue, p);
+
+  return p->pid;
+}
+
+PROC *kfork(char *filename)
+{
+  int i;
+  int *ptable, pentry;
+  char *addr, file[32];
+
+  PROC *p = dequeue(&freeList);
+  if (p == 0)
+  {
+    kprintf("kfork failed\n");
+    return (PROC *)0;
+  }
+  p->ppid = running->pid;
+  p->parent = running;
+  p->parent = running;
   p->status = READY;
   p->priority = 1;
   p->cpsr = (int *)0x10;
-
-  // finish initializing proc struct
 
   // build p's pgtable
   p->pgdir = (int *)(0x600000 + (p->pid - 1) * 0x4000);
@@ -125,16 +171,19 @@ PROC *kfork(char *filename)
   //-------------------------------------------------
   //  14 13 12 11 10 9  8  7  6  5  4   3    2   1
   /********************
-
   // to go Umode, must set new PROC's Umode cpsr to Umode=10000
   // this was done in ts.s dring init the mode stacks ==> 
   // user mode's cspr was set to IF=00, mode=10000  
-
   ***********************/
   // must load filename to Umode image area at 7MB+(pid-1)*1MB
   addr = (char *)(0x700000 + (p->pid) * 0x100000);
-
-  load(filename, p);
+  file[0] = 0;
+  if (filename[0] != '/')
+  { // relative to /bin
+    kstrcpy(file, "/bin/");
+  }
+  kstrcat(file, filename);
+  load(file, p);
 
   // must fix Umode ustack for it to goUmode: how did the PROC come to Kmode?
   // by swi # from VA=0 in Umode => at that time all CPU regs are 0
@@ -151,29 +200,14 @@ PROC *kfork(char *filename)
 
   //  p->kstack[SSIZE-1] = (int)0x80000000;
   p->kstack[SSIZE - 1] = VA(0);
-
-  // process family tree goes here
-  if (p->parent->child == 0) //if theres no children
-  {
-    p->parent->child = p;
-    printf("%d\n", p);
-  }
-  else
-  {
-    PROC *pTemp = p->parent->child; //there is a child
-    while (pTemp)
-    {
-      pTemp = pTemp->sibling; //going to keep progressing through the list
-    }
-    pTemp->sibling = pTemp;
-  }
-
   // -|-----goUmode-------------------------------------------------
   //  r0 r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 ufp uip upc|string       |
   //----------------------------------------------------------------
   //  14 13 12 11 10 9  8  7  6  5  4   3    2   1 |             |
 
   enqueue(&readyQueue, p);
+
+  enqueueChild(&running->child, p);
 
   kprintf("proc %d kforked a child %d: ", running->pid, p->pid);
   printQ(readyQueue);
