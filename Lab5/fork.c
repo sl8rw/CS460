@@ -60,6 +60,7 @@ int exec(char *cmdline) // cmdline=VA in Uspace
 
 PROC *fork()
 {
+  kprintf("in fork\n");
   int i;
   int *ptable, pentry;
   char *PA, *CA;
@@ -116,6 +117,7 @@ PROC *fork()
 
 PROC *kfork(char *filename)
 {
+  kprintf("in kfork");
   int i;
   int *ptable, pentry;
   char *addr, file[32];

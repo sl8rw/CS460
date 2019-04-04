@@ -45,9 +45,9 @@ int ubody(char *name)
     if (strcmp(line, "sleep")==0)
       usleep();
     if (strcmp(line, "fork")==0)
-       ufork(name);
+       ufork();
     if (strcmp(line, "kfork")==0)
-      ukfork();
+      ukfork(name);
     if (strcmp(line, "exec")==0)
        uexec();
     if (strcmp(line, "exit")==0)
@@ -125,7 +125,7 @@ int usleep()
 int uexec()
 {
   char *cmd;
-  printf("What command?\n");
+  kprintf("What command?\n");
   ugetline(cmd);
   return syscall(93,cmd,0,0);
 }
@@ -134,14 +134,13 @@ int uexit()
   return syscall(8,0,0,0);
 }
 
-int ufork(char *name)
+int ufork()
 {
-  return syscall(9,name,0,0); //binding, parameters.......
+  return syscall(9,0,0,0); //binding, parameters.......
 }
 
 int ukfork(char *name)
 {
-
   return syscall(10,name,0,0);
 }
 

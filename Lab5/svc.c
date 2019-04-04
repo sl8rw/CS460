@@ -87,7 +87,7 @@ int do_fork()
 
 int do_kfork(char *name)
 {
-  (int)kfork(name);
+  kfork(name);
 }
 
 int do_exec(int selection)

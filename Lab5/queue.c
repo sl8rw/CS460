@@ -49,12 +49,41 @@ int enqueue(PROC **queue, PROC *p)
   q->next = p;
 }
 
+
 PROC *dequeue(PROC **queue)
 {
   PROC *p = *queue;
   if (p)
     *queue = p->next;
   return p;
+}
+
+int enqueueChild(PROC **queue, PROC *p)
+{
+   PROC *q = *queue;
+   if (q == 0 || p->priority > q->priority)
+   {
+      *queue = p;
+      p->sibling = q;
+   }
+   else
+   {
+
+      while (q->sibling && p->priority <= q->sibling->priority)
+      {
+         q = q->sibling;
+      }
+      p->sibling = q->sibling;
+      q->sibling = p;
+   }
+}
+
+PROC *dequeueChild(PROC **queue)
+{
+   PROC *p = *queue;
+   if (p)
+      *queue = (*queue)->sibling;
+   return p;
 }
 
 int printQ(PROC *p)
