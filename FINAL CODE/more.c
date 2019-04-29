@@ -2,81 +2,111 @@
 
 //more usage is more filename with filename optional, if no filename us stdin
 
-char buf[1024], uline[2048];
-char line2;
+#define DISPLAYED_LINES 20
+char buf[1024], myline[256];
+int linecount = 0;
+int index = 0;
 char tty[64];
 char temp;
+char ret = '\r';
+char nline = '\n';
+char spacebar = ' ';
+
+// void print_lines(int fd, int n)
+// {
+//     char ch;
+//     char lastch;
+//     int n_read=0;
+//     int count=0;
+//     while(read(fd,&ch,1))
+//     {
+//         line[index]=ch;
+//         if(ch==nline)
+//         {
+//             if(lastch!=nline && lastch!=ret)
+//             {
+//                 linecount++;
+//                 index=0;
+//                 printf("%s",line);
+//                 for(int i=0;i<256;i++)
+//                 {
+//                     line[i]=0; //0s out string
+//                 }
+//             }
+//         }
+
+//         }
+//     }
+// }
 int main(int argc, char *argv[])
 {
     int fd = 0;
     int gd;
     int i, n;
-    char ret = '\r';
-    char nline = '\n';
-    char w;
+    char lastch;
+    //int count;
+    char ch;
+    char keypress;
 
-    line2 = 0;
-    gettty(tty);
-    gd = open(tty, 0);
-
-    if (argv[1])
+    if (argc == 1) //term
     {
-        //stdin
-        fd = open(argv[1], 0); //reading from stdin
-        if (fd < 0)
+        gettty(tty);
+        fd = open(tty, O_RDONLY);
+        while (getline(myline)) //get us a string from terminal easy to measruee
         {
-            printf("ERROR: issue with stdin\n");
-            exit(1);
-        }
-    }
-    if (fd)
-    {
-        n = read(fd, buf, 1024);
-        while (n > 0)
-        {
-            for (i = 0; i < n; i++)
+            printf("%s\r", myline); //printing to the terminal window
+            linecount++;            //tracking number of lines
+            if (linecount > DISPLAYED_LINES)
             {
-                temp = buf[i];
-                write(1, &temp, 1);
-                if (temp == '\n')
+                n = read(fd, &ch, 1);
+                if (ch == ret || ch == nline) //display ONLY 1 LINE
                 {
-                    line2++;
-                    write(2, &ret, 1);
+                    linecount--;
                 }
-                if (line2 > 25)
+                if (ch == spacebar)
                 {
-                    //more than 25 lines read
-                    read(gd, &w, 1);
-                    if (w == ret || w == nline)
-                    {
-                        line2--;
-                    }
-                    if ((w == ' '))
-                    {
-                        line2 = 0;
-                    }
+                    linecount = 0; //display 20 more lines
                 }
             }
-            n = read(fd, buf, 1024);
         }
     }
     else
     {
-        while (getline(uline))
+        i = 0;
+        while (argc > i)
         {
-            printf("%s\r", uline);
-            line2++; //tracking number of lines
-            if (line2 > 25)
+
+            fd = open(argv[i++], O_RDONLY);
+            while (read, &ch, 1)
             {
-                n = read(gd, &w, 1);
-                if (w == ret || w == nline)
+                line[index] = ch;
+                if (ch == nline)
                 {
-                    line2--;
+                    if (lastch != nline && lastch != ret)
+                    {
+                        linecount++;
+                        index = 0;
+                        printf("%s", line);
+                        for (i = 0; i < 256; i++)
+                        {
+                            line[i] = 0; //0s out string
+                        }
+                    }
                 }
-                if (w == ' ')
+                if (linecount == DISPLAYED_LINES)
                 {
-                    line2 = 0;
+                    keypress = getc(); //receives char
+                    if (keypress == spacebar)
+                    {
+                        linecount = 0;
+                        break;
+                    }
+                    if (keypress == nline || keypress == ret)
+                    {
+                        linecount--;
+                    }
                 }
+                lastch = ch;
             }
         }
     }
